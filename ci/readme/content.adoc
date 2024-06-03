@@ -1,0 +1,2 @@
+A discord rich presence daemon for https://www.flashflashrevolution.com[FlashFlashRevolution].
+It works by listening to the game's https://github.com/flashflashrevolution/web-stream-overlay[web stream overlay server] for updates.

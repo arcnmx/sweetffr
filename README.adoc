@@ -1,0 +1,7 @@
+= SweetFFR
+:relative-blob: ./
+:readme-inc: ./ci/readme/
+
+include::{readme-inc}header.adoc[]
+
+include::{readme-inc}content.adoc[]

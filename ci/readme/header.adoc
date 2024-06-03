@@ -1,0 +1,1 @@
+link:{relative-blob}COPYING[image:{badge-license}["MIT",title="License"]]
