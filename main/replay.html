@@ -1,1 +1,74 @@
-/nix/store/p1mg57rbarynvvdx1cki4ah0i0chjmd5-replay.html
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>FFR R^3</title>
+		<meta charset='utf8'>
+	</head>
+	<body>
+		<div id='ffr'></div>
+		<script src='https://unpkg.com/@ruffle-rs/ruffle'></script>
+		<script>
+			const query = new URLSearchParams(window.location.search);
+			const engine = query.get('engine') || 'flash';
+			const replay = query.get('replay');
+			const replayid = query.get('replayid');
+			const skip = query.get('skip');
+			const level = query.get('level');
+			const avatar = query.get('avatar');
+
+			window.fetch = new Proxy(window.fetch, {
+				apply: function (target, that, args) {
+					if (replay && args[0] instanceof Request && args[0].url.includes('siteReplay.php')) {
+						return Promise.resolve(new Response(replay));
+					} else if (avatar && args[0] instanceof Request && args[0].url.includes('avatar_imgembedded.php')) {
+						args[0].url = avatar
+						return target.apply(that, args);
+					} else {
+						return target.apply(that, args);
+					}
+				},
+			});
+
+			const ruffle = window.RufflePlayer.newest();
+			const player = Object.assign(document.getElementById('ffr').appendChild(ruffle.createPlayer()), {
+				width: 780,
+				height: 480,
+				style: 'width: 780px; height: 480px; margin: auto; display: block;',
+			});
+
+			var flashvars = new Object({ ruffle: 1 })
+			if (replay) {
+				Object.assign(flashvars, { replay: 1 })
+			} else if (replayid) {
+				Object.assign(flashvars, { replay: replayid })
+			} else if (level) {
+				Object.assign(flashvars, { preview_file: level })
+			}
+			if (skip) {
+				Object.assign(flashvars, { replaySkip: 1 })
+			}
+
+			const air = engine == 'air';
+			var engineUrl = 'https://www.flashflashrevolution.com/~velocity/R^3.swf';
+			if (engine == 'air') {
+				engineUrl = 'https://gensokyo.zone/ffr/R3Air.swf';
+			}
+
+			player.load({
+				url: engineUrl,
+				playerRuntime: air ? 'flashPlayer' : 'air',
+				parameters: flashvars,
+				base: 'https://www.flashflashrevolution.com/',
+				autoplay: 'on',
+				socketProxy: [
+					{
+						host: 'mp.flashflashrevolution.com',
+						port: 8084,
+						//proxyUrl: 'ws://mp.flashflashrevolution.com:8084',
+						proxyUrl: 'wss://gensokyo.zone/ffr/mp/sock',
+					}
+				],
+			});
+		</script>
+	</body>
+</html>
