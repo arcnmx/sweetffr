@@ -30,6 +30,19 @@ pub struct Playing {
 }
 
 impl Playing {
+	pub const ICON_URL: &'static str = "https://www.flashflashrevolution.com/images/2008/ffr-site-icon.png";
+	pub const RELEASE_TAG: &'static str = match option_env!("SWEETFFR_RELEASE_TAG") {
+		Some(tag) => tag,
+		//None => concat!("v", env!("CARGO_PKG_VERSION")),
+		None => "main",
+	};
+
+	pub fn replay_url<'a, V: AsRef<str>, I: IntoIterator<Item = (&'a str, V)>>(args: I) -> Url {
+		let base = format!("https://arcnmx.github.io/sweetffr/{}/replay.html", Self::RELEASE_TAG);
+
+		Url::parse_with_params(&base, args).unwrap()
+	}
+
 	// TODO: Result<()>?
 	pub fn process_event(&mut self, event: &StreamMessage) {
 		match &event.event {
@@ -112,7 +125,6 @@ impl Playing {
 
 	pub fn discord_activity_idle(&self, play: Option<&NowPlaying>) -> Activity {
 		let player = play.map(|play| &play.song.player).or_else(|| self.player());
-		let ffr_icon = "https://www.flashflashrevolution.com/images/2008/ffr-site-icon.png";
 		Activity::default().assets(move |assets| {
 			let assets = match player {
 				Some(player) => assets
@@ -120,7 +132,7 @@ impl Playing {
 					.small_text(format!("{} ({})", player.name, player.skill_level)),
 				None => assets,
 			};
-			assets.large_image(String::from(ffr_icon))
+			assets.large_image(Self::ICON_URL)
 		})
 	}
 
@@ -332,13 +344,12 @@ impl NowPlaying {
 
 		let replay_url = match self.recent_id {
 			Some(id) => Some({
-				let url = Url::parse_with_params("https://arcnmx.github.io/sweetffr/main/replay.html", [
+				let url = Playing::replay_url([
 					("replayid", &format!("100{id}")),
 					//("engine", "air"),
 					//("skip", "1"),
 					//("avatar", &self.song.player.avatar),
-				])
-				.unwrap();
+				]);
 				if self.ended.is_some() {
 					(url, "Replay")
 				} else {
@@ -395,12 +406,11 @@ impl NowPlaying {
 					userid: self.song.player.userid,
 				});
 				let replay = serde_json::to_string(&replay).unwrap();
-				let replay_url = Url::parse_with_params("https://arcnmx.github.io/sweetffr/main/replay.html", [
+				let replay_url = Self::replay_url([
 					//("avatar", &self.song.player.avatar),
 					("replay", &replay[..]),
 					("skip", "1"),
-				])
-				.unwrap();
+				]);
 				Some((replay_url, "Replay"))
 			},
 			_ => None,

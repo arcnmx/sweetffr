@@ -9,36 +9,33 @@
   };
   outputs = { self, flakelib, rust, nixpkgs, ... }@inputs: let
     nixlib = nixpkgs.lib;
+    callPackageArgs = {
+      source = self.lib.crate.src;
+      inherit (self.lib.crate) cargoLock;
+      inherit (self.lib) crate releaseTag;
+      inherit self;
+    };
   in flakelib {
     inherit inputs;
     packages = {
       sweetffr = {
-        stdenv, rustPlatform, lib
-      , pkg-config
-      , openssl
-      , buildType ? "release"
-      , source
-      }: with lib; rustPlatform.buildRustPackage rec {
-        pname = "sweetffr";
-        version = if buildType == "release"
-          then self.lib.version
-          else self.lastModifiedDate or self.lib.version;
-
-        src = source;
-        inherit (self.lib.crate) cargoLock;
-        buildFeatures = [ "openssl" "recent" ];
-
-        buildInputs = [ openssl ];
-        nativeBuildInputs = [ pkg-config ];
-
-        inherit buildType;
-
-        meta = with lib; {
-          license = lib.licenses.mit;
-          maintainers = [ maintainers.arcnmx ];
-          mainProgram = pname;
+        __functor = _: import ./derivation.nix;
+        fl'config.args = {
+          pkg-config.offset = "build";
+          crate.fallback = self.lib.crate;
+          releaseTag.fallback = self.lib.releaseTag;
+          self.fallback = self;
         };
       };
+      sweetffr-w64 = { pkgsCross'mingwW64, rust-w64, source }: pkgsCross'mingwW64.callPackage ./derivation.nix (callPackageArgs // {
+        inherit (rust-w64.latest) rustPlatform;
+        inherit source;
+      });
+      sweetffr-static = { pkgsCross'musl64'pkgsStatic, source }: pkgsCross'musl64'pkgsStatic.callPackage ./derivation.nix (callPackageArgs // {
+        inherit ((import inputs.rust { pkgs = pkgsCross'musl64'pkgsStatic; }).latest) rustPlatform;
+        inherit source;
+        enableOpenssl = false;
+      });
       default = { sweetffr }: sweetffr;
     };
     devShells = {
@@ -72,6 +69,12 @@
       };
       default = { outputs'devShells }: outputs'devShells.plain;
     };
+    overlays = {
+      sweetffr = final: prev: {
+        sweetffr = final.callPackage ./derivation.nix callPackageArgs;
+      };
+      default = self.overlays.sweetffr;
+    };
     legacyPackages = {
       source = { rust'builders }: rust'builders.wrapSource self.lib.crate.src;
 
@@ -103,6 +106,21 @@
       ];
       outputHashes = { rust'builders }: rust'builders.cargoOutputHashes {
         inherit (self.lib) crate;
+      };
+      rust-w64 = { pkgsCross'mingwW64 }: import inputs.rust { inherit (pkgsCross'mingwW64) pkgs; };
+      rust-w64-overlay = { rust-w64 }: let
+        target = rust-w64.lib.rustTargetEnvironment {
+          inherit (rust-w64) pkgs;
+          rustcFlags = [ "-L native=${rust-w64.pkgs.windows.pthreads}/lib" ];
+        };
+      in cself: csuper: {
+        sysroot-std = csuper.sysroot-std ++ [ cself.manifest.targets.${target.triple}.rust-std ];
+        cargo-cc = csuper.cargo-cc // cself.context.rlib.cargoEnv {
+          inherit target;
+        };
+        rustc-cc = csuper.rustc-cc // cself.context.rlib.rustcCcEnv {
+          inherit target;
+        };
       };
     };
     checks = {

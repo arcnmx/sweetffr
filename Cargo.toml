@@ -33,3 +33,4 @@ env_logger = "0.11"
 default = ["openssl", "recent"]
 recent = ["dep:html5ever"]
 openssl = ["tokio-websockets/native-tls", "tokio-websockets/openssl", "tokio-websockets/getrandom"]
+sha1_smol = ["tokio-websockets/sha1_smol", "tokio-websockets/fastrand"]
