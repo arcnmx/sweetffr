@@ -29,8 +29,9 @@ pub struct Args {
 	/// Discord API client identifier of the game you're playing.
 	///
 	/// Use `0` to disable reporting activity to the Discord IPC.
-	/// Try `677226551607033903` for "music".
-	#[clap(short = 'D', long = "discord-client-id", default_value = "1247041590954950717")]
+	/// Try `1247041590954950717` for "FFR"
+	/// or `677226551607033903` for "music"
+	#[clap(short = 'D', long = "discord-client-id", default_value = "443571872391495681")]
 	pub client_id: Option<u64>,
 }
 

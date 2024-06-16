@@ -345,8 +345,8 @@ impl NowPlaying {
 		let replay_url = match self.recent_id {
 			Some(id) => Some({
 				let url = Playing::replay_url([
-					("replayid", &format!("100{id}")),
-					//("engine", "air"),
+					("replayid", &format!("100{id}")[..]),
+					("engine", "air"),
 					//("skip", "1"),
 					//("avatar", &self.song.player.avatar),
 				]);
@@ -408,7 +408,7 @@ impl NowPlaying {
 				let replay = serde_json::to_string(&replay).unwrap();
 				let replay_url = Self::replay_url([
 					//("avatar", &self.song.player.avatar),
-					("replay", &replay[..]),
+					("replayid", &replay[..]),
 					("skip", "1"),
 				]);
 				Some((replay_url, "Replay"))
