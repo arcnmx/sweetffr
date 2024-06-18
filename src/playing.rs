@@ -416,11 +416,15 @@ impl NowPlaying {
 			_ => None,
 		};
 
-		move |activity: Activity| {
-			let activity = activity.assets(move |assets| match alt_title {
-				Some(value) => assets.large_text(value),
-				None => assets,
-			});
+		move |mut activity: Activity| {
+			let activity = match alt_title {
+				Some(value) => {
+					let assets = activity.assets.get_or_insert(Default::default());
+					assets.large_text = Some(value);
+					activity
+				},
+				None => activity,
+			};
 			let activity = match title {
 				Some(title) => activity.details(title),
 				None => activity,
